@@ -4,8 +4,8 @@ import 'screens/dashboard_screen.dart';
 import 'screens/sleep_screen.dart';
 import 'screens/breathing_screen.dart';
 import 'screens/focus_screen.dart';
-import 'screens/memory_screen.dart' show MemoryScreen;
-import 'screens/chess_screen.dart' show ChessScreen;
+import 'screens/memory_screen.dart';
+import 'screens/chess_screen.dart';
 import 'screens/learn_screen.dart';
 import 'screens/settings_screen.dart';
 
@@ -37,82 +37,154 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final _screens = const [
-    DashboardScreen(),
-    SleepScreen(),
-    BreathingExerciseScreen(),
-    FocusScreen(),
-    MemoryScreen(),
-    LearnScreen(),
-    ChessScreen(),
-    SettingsScreen(),
-  ];
-
-  final _titles = ['SOMA', 'Tidur', 'Relaksasi', 'Fokus', 'Memory', 'Belajar', 'Catur', 'Settings'];
+  void _navigateTo(int index) {
+    setState(() => _currentIndex = index);
+    Navigator.pop(context); // close drawer if open
+  }
 
   @override
   Widget build(BuildContext context) {
+    // 6 menu: Dashboard, Tidur, Relaksasi, Game, Belajar, Settings
+    // Game menu -> shows sub-menu (Fokus, Memory, Catur)
     return Scaffold(
       backgroundColor: SomaTheme.bgDeep,
-      appBar: AppBar(
-        backgroundColor: SomaTheme.bgDeep,
-        title: Text(_titles[_currentIndex], style: const TextStyle(color: SomaTheme.white, fontWeight: FontWeight.w700)),
-        centerTitle: true,
+      body: _getBody(),
+      bottomNavigationBar: _buildNavBar(),
+      endDrawer: _currentIndex == 3 ? _buildGameDrawer() : null,
+    );
+  }
+
+  Widget _getBody() {
+    switch (_currentIndex) {
+      case 0: return const DashboardScreen();
+      case 1: return const SleepScreen();
+      case 2: return const BreathingExerciseScreen();
+      case 3: return _gameScreen;
+      case 4: return const LearnScreen();
+      case 5: return const SettingsScreen();
+      default: return const DashboardScreen();
+    }
+  }
+
+  int _gameIndex = 0;
+  Widget get _gameScreen {
+    switch (_gameIndex) {
+      case 0: return const FocusScreen();
+      case 1: return const MemoryScreen();
+      case 2: return const ChessScreen();
+      default: return const FocusScreen();
+    }
+  }
+
+  String get _currentTitle {
+    if (_currentIndex == 3) {
+      const gameTitles = ['Fokus', 'Memory', 'Catur'];
+      return gameTitles[_gameIndex];
+    }
+    const titles = ['SOMA', 'Tidur', 'Relaksasi', 'Game', 'Belajar', 'Settings'];
+    return titles[_currentIndex];
+  }
+
+  Widget _buildNavBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: SomaTheme.bgCard,
+        border: Border(top: BorderSide(color: SomaTheme.teal.withOpacity(0.15))),
       ),
-      body: _screens[_currentIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: SomaTheme.bgCard,
-          border: Border(top: BorderSide(color: SomaTheme.teal.withOpacity(0.2))),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavButton(Icons.dashboard, 'Home', 0),
+              _buildNavButton(Icons.bedtime, 'Tidur', 1),
+              _buildNavButton(Icons.waves, 'Tenang', 2),
+              _buildNavButton(Icons.sports_esports, 'Game', 3),
+              _buildNavButton(Icons.book, 'Belajar', 4),
+              _buildNavButton(Icons.settings, 'Setting', 5),
+            ],
+          ),
         ),
-        child: NavigationBar(
-          backgroundColor: SomaTheme.bgCard,
-          selectedIndex: _currentIndex > 5 ? 0 : _currentIndex,
-          onDestinationSelected: (i) => setState(() => _currentIndex = i),
-          indicatorColor: SomaTheme.teal.withOpacity(0.2),
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.dashboard), selectedIcon: Icon(Icons.dashboard, color: SomaTheme.tealBright), label: 'Dashboard'),
-            NavigationDestination(icon: Icon(Icons.bedtime), selectedIcon: Icon(Icons.bedtime, color: SomaTheme.tealBright), label: 'Tidur'),
-            NavigationDestination(icon: Icon(Icons.waves), selectedIcon: Icon(Icons.waves, color: SomaTheme.tealBright), label: 'Relaksasi'),
-            NavigationDestination(icon: Icon(Icons.timer), selectedIcon: Icon(Icons.timer, color: SomaTheme.tealBright), label: 'Fokus'),
-            NavigationDestination(icon: Icon(Icons.extension), selectedIcon: Icon(Icons.extension, color: SomaTheme.tealBright), label: 'Memory'),
-            NavigationDestination(icon: Icon(Icons.book), selectedIcon: Icon(Icons.book, color: SomaTheme.tealBright), label: 'Belajar'),
+      ),
+    );
+  }
+
+  Widget _buildNavButton(IconData icon, String label, int index) {
+    final active = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? SomaTheme.teal.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 22, color: active ? SomaTheme.tealBright : SomaTheme.textMuted),
+            const SizedBox(height: 3),
+            Text(label, style: TextStyle(
+              color: active ? SomaTheme.tealBright : SomaTheme.textMuted,
+              fontSize: 10,
+              fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+            )),
           ],
         ),
       ),
-      endDrawer: Drawer(
-        backgroundColor: SomaTheme.bgCard,
+    );
+  }
+
+  Widget _buildGameDrawer() {
+    return Drawer(
+      backgroundColor: SomaTheme.bgCard,
+      child: SafeArea(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
+            Container(
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(color: SomaTheme.bgDeep),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('SOMA', style: TextStyle(color: SomaTheme.tealBright, fontSize: 28, fontWeight: FontWeight.w800)),
-                  Text('Bangunkan kekuatan otak yang tidur', style: TextStyle(color: SomaTheme.textMuted, fontSize: 12)),
+                  Icon(Icons.sports_esports, color: SomaTheme.teal, size: 32),
+                  const SizedBox(height: 12),
+                  Text('Game', style: TextStyle(color: SomaTheme.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                  Text('Pilih latihan otak', style: TextStyle(color: SomaTheme.textMuted, fontSize: 13)),
                 ],
               ),
             ),
-            ListTile(
-              leading: Icon(Icons.sports_esports, color: SomaTheme.teal),
-              title: Text('Catur', style: TextStyle(color: SomaTheme.text)),
-              onTap: () { setState(() => _currentIndex = 6); Navigator.pop(context); },
-            ),
-            ListTile(
-              leading: Icon(Icons.settings, color: SomaTheme.teal),
-              title: Text('Settings', style: TextStyle(color: SomaTheme.text)),
-              onTap: () { setState(() => _currentIndex = 7); Navigator.pop(context); },
-            ),
-            ListTile(
-              leading: Icon(Icons.analytics, color: SomaTheme.teal),
-              title: Text('Brain Analytics', style: TextStyle(color: SomaTheme.text)),
-              onTap: () { Navigator.pop(context); },
-            ),
+            _buildDrawerItem(Icons.timer, 'Fokus Therapy', 'Pomodoro, latihan konsentrasi', 0),
+            _buildDrawerItem(Icons.extension, 'Memory Trainer', '4 game + flashcard', 1),
+            _buildDrawerItem(Icons.sports_esports, 'Catur', 'Main vs AI minimax', 2),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(IconData icon, String title, String subtitle, int gameIdx) {
+    final active = _gameIndex == gameIdx;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: active ? SomaTheme.teal.withOpacity(0.12) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: active ? SomaTheme.tealBright : SomaTheme.teal),
+        title: Text(title, style: TextStyle(
+          color: active ? SomaTheme.tealBright : SomaTheme.text,
+          fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+          fontSize: 15,
+        )),
+        subtitle: Text(subtitle, style: TextStyle(color: SomaTheme.textMuted, fontSize: 12)),
+        onTap: () {
+          setState(() => _gameIndex = gameIdx);
+          Navigator.pop(context);
+        },
       ),
     );
   }
