@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/soma_theme.dart';
+import '../services/auth_service.dart';
+import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -77,11 +79,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Text('Reset semua progress dan data SOMA', style: TextStyle(color: SomaTheme.textMuted, fontSize: 13)),
               const SizedBox(height: 12),
               OutlinedButton.icon(
-                onPressed: () {
-                  // Reset logic
+                onPressed: () async {
+                  await AuthService.logout();
+                  if (!mounted) return;
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
                 },
-                icon: const Icon(Icons.delete, color: Colors.red),
-                label: const Text('Reset Semua Data', style: TextStyle(color: Colors.red)),
+                icon: const Icon(Icons.logout, color: Colors.red),
+                label: const Text('Logout', style: TextStyle(color: Colors.red)),
               ),
             ],
           ),

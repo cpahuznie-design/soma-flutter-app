@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'theme/soma_theme.dart';
+import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/sleep_screen.dart';
 import 'screens/breathing_screen.dart';
@@ -8,6 +9,7 @@ import 'screens/memory_screen.dart';
 import 'screens/chess_screen.dart';
 import 'screens/learn_screen.dart';
 import 'screens/settings_screen.dart';
+import 'services/auth_service.dart';
 
 void main() {
   runApp(const SomaApp());
@@ -21,8 +23,66 @@ class SomaApp extends StatelessWidget {
     return MaterialApp(
       title: 'SOMA — Bangunkan Kekuatan Otak yang Tidur',
       theme: SomaTheme.darkTheme,
-      home: const MainScreen(),
+      home: const SplashGate(),
       debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+// Cek login status, redirect ke login atau home
+class SplashGate extends StatefulWidget {
+  const SplashGate({super.key});
+
+  @override
+  State<SplashGate> createState() => _SplashGateState();
+}
+
+class _SplashGateState extends State<SplashGate> {
+  @override
+  void initState() {
+    super.initState();
+    _checkLogin();
+  }
+
+  void _checkLogin() async {
+    final loggedIn = await AuthService.isLoggedIn();
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => loggedIn ? const MainScreen() : const LoginScreen()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: SomaTheme.bgDeep,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 90, height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [SomaTheme.teal.withOpacity(0.3), SomaTheme.bgCard]),
+                border: Border.all(color: SomaTheme.teal, width: 2),
+              ),
+              child: Icon(Icons.psychology, color: SomaTheme.tealBright, size: 44),
+            ),
+            const SizedBox(height: 20),
+            Text('SOMA', style: TextStyle(
+              color: SomaTheme.white, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 6,
+            )),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: 24, height: 24,
+              child: CircularProgressIndicator(color: SomaTheme.teal, strokeWidth: 2),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -36,16 +96,10 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-
-  void _navigateTo(int index) {
-    setState(() => _currentIndex = index);
-    Navigator.pop(context); // close drawer if open
-  }
+  int _gameIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    // 6 menu: Dashboard, Tidur, Relaksasi, Game, Belajar, Settings
-    // Game menu -> shows sub-menu (Fokus, Memory, Catur)
     return Scaffold(
       backgroundColor: SomaTheme.bgDeep,
       body: _getBody(),
@@ -66,7 +120,6 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  int _gameIndex = 0;
   Widget get _gameScreen {
     switch (_gameIndex) {
       case 0: return const FocusScreen();
@@ -74,15 +127,6 @@ class _MainScreenState extends State<MainScreen> {
       case 2: return const ChessScreen();
       default: return const FocusScreen();
     }
-  }
-
-  String get _currentTitle {
-    if (_currentIndex == 3) {
-      const gameTitles = ['Fokus', 'Memory', 'Catur'];
-      return gameTitles[_gameIndex];
-    }
-    const titles = ['SOMA', 'Tidur', 'Relaksasi', 'Game', 'Belajar', 'Settings'];
-    return titles[_currentIndex];
   }
 
   Widget _buildNavBar() {
