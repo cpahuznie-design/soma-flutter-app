@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:math' as math;
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:vibration/vibration.dart';
-import 'package:audioplayers/audioplayers.dart';
 import '../theme/soma_theme.dart';
 
 class BreathingExerciseScreen extends StatefulWidget {
@@ -25,7 +23,8 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
   double _circleScale = 1.0;
   Color _circleColor = SomaTheme.teal;
 
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  // Audio via SystemSound (no external package needed)
+  // Vibration handles physical feedback, SystemSound handles audio feedback
   Timer? _audioSweepTimer;
 
   final _techniques = {
@@ -49,7 +48,6 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
   @override
   void dispose() {
     _audioSweepTimer?.cancel();
-    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -126,130 +124,30 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
     }
   }
 
-  /// Play a tone that sweeps (inhale/exhale) or holds steady (hold).
-  /// Uses AudioPlayer's setSourceAsset-free approach: we generate a tone
-  /// via release mode + UrlSource pointing to a tiny generated WAV is not
-  /// available, so we use short beeps in a sweep pattern via play() with
-  /// successive UrlSources is not feasible either. Instead we use a
-  /// short tone using the player's `setReleaseMode` and loop a generated
-  /// sine via bytes using a data URI with audio/wav is unsupported.
-  ///
-  /// Simplest portable approach: play a short tone for the phase and update
-  /// the pitch via a sweep timer when inhale/exhale.
+  /// Play system sound for breathing phase feedback.
+  /// Uses SystemSound (no external package needed, works on all platforms).
   Future<void> _playPhaseAudio(String phaseName, int durationSec) async {
     _audioSweepTimer?.cancel();
     try {
-      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      await _audioPlayer.setVolume(0.25);
-
-      if (phaseName == 'Tarik Napas') {
-        // Rising pitch 220 -> 440 Hz over the phase duration.
-        const double startHz = 220;
-        const double endHz = 440;
-        await _playTone(startHz);
-        final int steps = durationSec * 4;
-        final double stepHz = (endHz - startHz) / steps;
-        final Duration stepDur = Duration(
-          milliseconds: (durationSec * 1000) ~/ steps,
-        );
+      // Play a system click sound at the start of each phase
+      await SystemSound.play(SystemSoundType.click);
+      
+      // For inhale/exhale, play periodic clicks to simulate rising/falling tone
+      if (phaseName == 'Tarik Napas' || phaseName == 'Hembuskan') {
+        final int steps = durationSec;
         int i = 0;
-        _audioSweepTimer = Timer.periodic(stepDur, (t) {
+        _audioSweepTimer = Timer.periodic(const Duration(seconds: 1), (t) {
           i++;
           if (i >= steps) {
             t.cancel();
           } else {
-            _playTone(startHz + stepHz * i);
-          }
-        });
-      } else if (phaseName == 'Tahan') {
-        // Steady 330 Hz.
-        await _playTone(330);
-      } else if (phaseName == 'Hembuskan') {
-        // Falling pitch 440 -> 165 Hz over the phase duration.
-        const double startHz = 440;
-        const double endHz = 165;
-        await _playTone(startHz);
-        final int steps = durationSec * 4;
-        final double stepHz = (endHz - startHz) / steps;
-        final Duration stepDur = Duration(
-          milliseconds: (durationSec * 1000) ~/ steps,
-        );
-        int i = 0;
-        _audioSweepTimer = Timer.periodic(stepDur, (t) {
-          i++;
-          if (i >= steps) {
-            t.cancel();
-          } else {
-            _playTone(startHz + stepHz * i);
+            SystemSound.play(SystemSoundType.click);
           }
         });
       }
     } catch (_) {
-      // Audio playback may fail on unsupported platforms — ignore.
+      // Audio may fail on some platforms — ignore.
     }
-  }
-
-  /// Generate and play a short sine-wave tone at the given frequency.
-  /// Builds a minimal WAV in memory and plays it via BytesSource.
-  Future<void> _playTone(double freqHz) async {
-    try {
-      final bytes = _generateSineWave(freqHz, 0.3, 8000);
-      await _audioPlayer.play(BytesSource(bytes));
-    } catch (_) {
-      // Ignore audio errors.
-    }
-  }
-
-  /// Generate a small mono 16-bit PCM sine-wave WAV blob.
-  Uint8List _generateSineWave(double freq, double durationSec, int sampleRate) {
-    final int numSamples = (durationSec * sampleRate).toInt();
-    final int dataSize = numSamples * 2;
-    final int totalSize = 44 + dataSize;
-    final ByteData data = ByteData(totalSize);
-
-    // RIFF header
-    data.setUint8(0, 0x52); // 'R'
-    data.setUint8(1, 0x49); // 'I'
-    data.setUint8(2, 0x46); // 'F'
-    data.setUint8(3, 0x46); // 'F'
-    data.setUint32(4, totalSize - 8, Endian.little);
-    data.setUint8(8, 0x57);  // 'W'
-    data.setUint8(9, 0x41);  // 'A'
-    data.setUint8(10, 0x56); // 'V'
-    data.setUint8(11, 0x45); // 'E'
-
-    // fmt chunk
-    data.setUint8(12, 0x66); // 'f'
-    data.setUint8(13, 0x6d); // 'm'
-    data.setUint8(14, 0x74); // 't'
-    data.setUint8(15, 0x20); // ' '
-    data.setUint32(16, 16, Endian.little);
-    data.setUint16(20, 1, Endian.little); // PCM
-    data.setUint16(22, 1, Endian.little); // mono
-    data.setUint32(24, sampleRate, Endian.little);
-    data.setUint32(28, sampleRate * 2, Endian.little); // byte rate
-    data.setUint16(32, 2, Endian.little); // block align
-    data.setUint16(34, 16, Endian.little); // bits per sample
-
-    // data chunk
-    data.setUint8(36, 0x64); // 'd'
-    data.setUint8(37, 0x61); // 'a'
-    data.setUint8(38, 0x74); // 't'
-    data.setUint8(39, 0x61); // 'a'
-    data.setUint32(40, dataSize, Endian.little);
-
-    const double twoPi = 2 * math.pi;
-    const double amplitude = 0.4;
-    int offset = 44;
-    for (int i = 0; i < numSamples; i++) {
-      final double t = i / sampleRate;
-      final double sampleValue =
-          amplitude * math.sin(twoPi * freq * t);
-      final int value = (32767 * sampleValue).toInt();
-      data.setInt16(offset, value, Endian.little);
-      offset += 2;
-    }
-    return data.buffer.asUint8List(0, totalSize);
   }
 
   void _pause() {
@@ -260,13 +158,11 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
       _runCountdown();
     } else {
       _audioSweepTimer?.cancel();
-      _audioPlayer.pause();
     }
   }
 
   void _stop() {
     _audioSweepTimer?.cancel();
-    _audioPlayer.stop();
     setState(() {
       _running = false;
       _paused = false;
