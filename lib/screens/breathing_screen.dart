@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:vibration/vibration.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import '../theme/soma_theme.dart';
 
 class BreathingExerciseScreen extends StatefulWidget {
@@ -24,8 +23,7 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
   double _circleScale = 1.0;
   Color _circleColor = SomaTheme.teal;
   Timer? _audioSweepTimer;
-  FlutterTts? _tts;
-  bool _ttsReady = false;
+  bool _audioEnabled = true;
 
   // Technique info (manfaat, deskripsi, panduan)
   final _techniqueInfo = {
@@ -85,26 +83,11 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
   @override
   void initState() {
     super.initState();
-    _initTts();
-  }
-
-  Future<void> _initTts() async {
-    _tts = FlutterTts();
-    try {
-      await _tts!.setLanguage('id-ID');
-      await _tts!.setSpeechRate(0.4);
-      await _tts!.setVolume(0.8);
-      await _tts!.setPitch(1.0);
-      _ttsReady = true;
-    } catch (_) {
-      _ttsReady = false;
-    }
   }
 
   @override
   void dispose() {
     _audioSweepTimer?.cancel();
-    _tts?.stop();
     super.dispose();
   }
 
@@ -124,7 +107,6 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
     final phases = _techniques[_technique]!;
     final phase = phases[_phaseIdx];
     final phaseName = phase['name'] as String;
-    final voiceText = phase['voice'] as String;
 
     setState(() {
       _secondsLeft = (phase['dur'] as int);
@@ -136,20 +118,26 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
     // Vibration per phase
     _vibrate(phaseName);
 
-    // TTS voice guidance
-    _speak(voiceText);
-
     // System sound click
     _playClick();
+
+    // Haptic feedback (built-in, works on iOS + Android)
+    _hapticFeedback(phaseName);
 
     _runCountdown();
   }
 
-  Future<void> _speak(String text) async {
-    if (!_ttsReady || _tts == null) return;
+  void _hapticFeedback(String phaseName) {
     try {
-      await _tts!.stop();
-      await _tts!.speak(text);
+      if (phaseName == 'Tarik Napas' || phaseName == 'Tarik Dalam') {
+        HapticFeedback.lightImpact();
+      } else if (phaseName == 'Tahan' || phaseName == 'Tahan Napas') {
+        HapticFeedback.mediumImpact();
+      } else if (phaseName == 'Hembuskan') {
+        HapticFeedback.heavyImpact();
+      } else if (phaseName == 'Napas Cepat') {
+        HapticFeedback.selectionClick();
+      }
     } catch (_) {}
   }
 
@@ -207,13 +195,11 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
       _runCountdown();
     } else {
       _audioSweepTimer?.cancel();
-      _tts?.stop();
     }
   }
 
   void _stop() {
     _audioSweepTimer?.cancel();
-    _tts?.stop();
     setState(() {
       _running = false;
       _paused = false;
@@ -398,11 +384,11 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(_ttsReady ? Icons.volume_up : Icons.volume_off,
-                  color: _ttsReady ? SomaTheme.teal : SomaTheme.textMuted, size: 16),
+              Icon(_audioEnabled ? Icons.vibration : Icons.volume_off,
+                  color: _audioEnabled ? SomaTheme.teal : SomaTheme.textMuted, size: 16),
               const SizedBox(width: 8),
               Text(
-                _ttsReady ? 'Audio Pemandu: Aktif (TTS)' : 'Audio Pemandu: Tidak tersedia',
+                _audioEnabled ? 'Vibration + Haptic + Sound: Aktif' : 'Audio: Nonaktif',
                 style: TextStyle(color: SomaTheme.textMuted, fontSize: 12),
               ),
             ],
