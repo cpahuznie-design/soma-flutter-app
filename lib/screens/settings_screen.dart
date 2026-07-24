@@ -32,86 +32,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _initNotifications();
+    NotificationService.init();
   }
 
-  Future<void> _initNotifications() async {
-    await NotificationService.init();
-  }
-
-  Future<void> _toggleSleep(bool v) async {
+  void _toggleSleep(bool v) {
     setState(() => _notifSleep = v);
-    if (v) {
-      await NotificationService.scheduleDaily(
-        id: NotificationService.idSleep,
-        hour: 21,
-        minute: 30,
-        title: 'SOMA',
-        body: 'Saatnya persiapan tidur 😴',
-      );
-    } else {
-      await NotificationService.cancel(NotificationService.idSleep);
-    }
+    NotificationService.toggleReminder('sleep', v);
   }
 
-  Future<void> _toggleFocus(bool v) async {
+  void _toggleFocus(bool v) {
     setState(() => _notifFocus = v);
-    if (v) {
-      await NotificationService.scheduleDaily(
-        id: NotificationService.idFocus,
-        hour: 8,
-        minute: 0,
-        title: 'SOMA',
-        body: 'Waktunya sesi fokus 🎯',
-      );
-    } else {
-      await NotificationService.cancel(NotificationService.idFocus);
-    }
+    NotificationService.toggleReminder('focus', v);
   }
 
-  Future<void> _toggleMemory(bool v) async {
+  void _toggleMemory(bool v) {
     setState(() => _notifMemory = v);
-    if (v) {
-      await NotificationService.scheduleDaily(
-        id: NotificationService.idMemory,
-        hour: 15,
-        minute: 0,
-        title: 'SOMA',
-        body: 'Latihan memory 🧩',
-      );
-    } else {
-      await NotificationService.cancel(NotificationService.idMemory);
-    }
+    NotificationService.toggleReminder('memory', v);
   }
 
-  Future<void> _toggleLearn(bool v) async {
+  void _toggleLearn(bool v) {
     setState(() => _notifLearn = v);
-    if (v) {
-      await NotificationService.scheduleDaily(
-        id: NotificationService.idLearn,
-        hour: 20,
-        minute: 0,
-        title: 'SOMA',
-        body: 'Waktu belajar 📖',
-      );
-    } else {
-      await NotificationService.cancel(NotificationService.idLearn);
-    }
+    NotificationService.toggleReminder('learn', v);
   }
 
-  Future<void> _toggleBreathing(bool v) async {
+  void _toggleBreathing(bool v) {
     setState(() => _notifBreathing = v);
-    if (v) {
-      await NotificationService.scheduleDaily(
-        id: NotificationService.idBreathing,
-        hour: 6,
-        minute: 0,
-        title: 'SOMA',
-        body: 'Breathing exercise pagi 🌬️',
-      );
-    } else {
-      await NotificationService.cancel(NotificationService.idBreathing);
-    }
+    NotificationService.toggleReminder('breathing', v);
   }
 
   @override

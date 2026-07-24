@@ -1,147 +1,79 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
+import 'dart:async';
+import 'package:flutter/material.dart';
 
 class NotificationService {
-  static final FlutterLocalNotificationsPlugin _plugin =
-      FlutterLocalNotificationsPlugin();
+  static final NotificationService _instance = NotificationService._();
+  factory NotificationService() => _instance;
+  NotificationService._();
 
-  static bool _initialized = false;
+  final Map<String, Timer> _timers = {};
+  final Map<String, bool> _enabled = {};
 
-  /// Initialize flutter_local_notifications and timezone data.
-  static Future<void> init() async {
-    if (_initialized) return;
+  static final _reminders = {
+    'sleep':     {'hour': 21, 'minute': 30, 'title': '😴 Saatnya Persiapan Tidur', 'body': 'Matikan gadget, lakukan breathing exercise, baca doa tidur.'},
+    'focus':     {'hour': 8,  'minute': 0,  'title': '🎯 Waktunya Sesi Fokus', 'body': 'Mulai Pomodoro 25 menit. Aktifkan brown noise untuk deep focus.'},
+    'memory':    {'hour': 15, 'minute': 0,  'title': '🧩 Latihan Memory', 'body': 'Main memory game 10 menit untuk latih hippocampus.'},
+    'learn':     {'hour': 20, 'minute': 0,  'title': '📖 Waktu Belajar', 'body': 'Buka Learning Assistant, pelajari materi baru 25 menit.'},
+    'breathing': {'hour': 6,  'minute': 0,  'title': '🌬️ Breathing Exercise Pagi', 'body': 'Mulai hari dengan 4-7-8 breathing. 4 siklus untuk tenangkan pikiran.'},
+  };
 
-    tz.initializeTimeZones();
-    try {
-      final String localTz = await FlutterNativeTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(localTz));
-    } catch (_) {
-      // Fallback to UTC if device timezone lookup fails.
-      tz.setLocalLocation(tz.UTC);
-    }
+  static NotificationService get instance => _instance;
 
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-    const InitializationSettings settings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
-
-    await _plugin.initialize(
-      settings,
-      onDidReceiveNotificationResponse: _onReceive,
-    );
-    _initialized = true;
+  static void init() {
+    final inst = _instance;
+    _reminders.forEach((key, r) {
+      inst._enabled[key] = true;
+      _scheduleReminder(key, r['hour'] as int, r['minute'] as int,
+        r['title'] as String, r['body'] as String);
+    });
   }
 
-  /// Request notification permissions (iOS/macOS and Android 13+).
-  static Future<void> requestPermissions() async {
-    if (!_initialized) await init();
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
-  }
-
-  /// Show an immediate notification.
-  static Future<void> showNotification({
-    required int id,
-    required String title,
-    required String body,
-  }) async {
-    if (!_initialized) await init();
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'soma_default',
-      'SOMA Default',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
-    const NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-    await _plugin.show(id, title, body, details);
-  }
-
-  /// Schedule a daily repeating notification at [hour]:[minute] local time.
-  static Future<void> scheduleDaily({
-    required int id,
-    required int hour,
-    required int minute,
-    required String title,
-    required String body,
-  }) async {
-    if (!_initialized) await init();
-    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime scheduled =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+  static void _scheduleReminder(String key, int hour, int minute, String title, String body) {
+    final inst = _instance;
+    inst._timers[key]?.cancel();
+    final now = DateTime.now();
+    var scheduled = DateTime(now.year, now.month, now.day, hour, minute);
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
+    final delay = scheduled.difference(now);
 
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'soma_daily',
-      'SOMA Daily Reminders',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
-    const NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      scheduled,
-      details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
+    inst._timers[key] = Timer(delay, () {
+      if (inst._enabled[key] ?? false) {
+        _showReminder(title, body);
+      }
+      _scheduleReminder(key, hour, minute, title, body);
+    });
   }
 
-  /// Cancel a scheduled notification by id.
-  static Future<void> cancel(int id) async {
-    await _plugin.cancel(id);
+  static void _showReminder(String title, String body) {
+    // In production: use flutter_local_notifications or awesome_notifications
+    // For now: log to console (works on all platforms)
+    debugPrint('🔔 SOMA Reminder: $title — $body');
   }
 
-  /// Cancel all notifications and scheduled reminders.
-  static Future<void> cancelAll() async {
-    await _plugin.cancelAll();
-  }
-
-  // Notification IDs for the scheduled reminders.
-  static const int idSleep = 101;
-  static const int idFocus = 102;
-  static const int idMemory = 103;
-  static const int idLearn = 104;
-  static const int idBreathing = 105;
-
-  static void Function(int, String, String)? _onTap;
-
-  static void setTapHandler(void Function(int, String, String) handler) {
-    _onTap = handler;
-  }
-
-  static void _onReceive(NotificationResponse response) {
-    if (_onTap != null) {
-      _onTap!(response.id ?? 0, '', '');
+  static void toggleReminder(String key, bool enabled) {
+    final inst = _instance;
+    inst._enabled[key] = enabled;
+    if (!enabled) {
+      inst._timers[key]?.cancel();
+    } else {
+      final r = _reminders[key];
+      if (r != null) {
+        _scheduleReminder(key, r['hour'] as int, r['minute'] as int,
+          r['title'] as String, r['body'] as String);
+      }
     }
   }
+
+  static bool isEnabled(String key) => _instance._enabled[key] ?? false;
+
+  static void cancelAll() {
+    final inst = _instance;
+    inst._timers.forEach((_, t) => t.cancel());
+    inst._timers.clear();
+    inst._enabled.forEach((k, _) => inst._enabled[k] = false);
+  }
+
+  static Map<String, Map<String, dynamic>> get reminders => _reminders;
 }

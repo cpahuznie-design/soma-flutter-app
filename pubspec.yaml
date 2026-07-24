@@ -38,9 +38,9 @@ dependencies:
   shared_preferences: ^2.5.3
   vibration: ^3.1.8
   audioplayers: ^6.4.0
-  flutter_local_notifications: ^19.5.0
   timezone: ^0.10.0
   flutter_native_timezone: ^1.0.10
+  flutter_timezone: ^4.1.1
 
 dev_dependencies:
   flutter_test:
