@@ -9,6 +9,10 @@ import 'screens/memory_screen.dart';
 import 'screens/chess_screen.dart';
 import 'screens/learn_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/ai_coach_screen.dart';
+import 'screens/challenge_screen.dart';
+import 'screens/sleep_stories_screen.dart';
+import 'screens/subscription_screen.dart';
 import 'services/auth_service.dart';
 
 void main() {
@@ -29,7 +33,6 @@ class SomaApp extends StatelessWidget {
   }
 }
 
-// Cek login status, redirect ke login atau home
 class SplashGate extends StatefulWidget {
   const SplashGate({super.key});
 
@@ -105,6 +108,7 @@ class _MainScreenState extends State<MainScreen> {
       body: _getBody(),
       bottomNavigationBar: _buildNavBar(),
       endDrawer: _currentIndex == 3 ? _buildGameDrawer() : null,
+      drawer: _buildSideDrawer(),
     );
   }
 
@@ -176,6 +180,55 @@ class _MainScreenState extends State<MainScreen> {
             )),
           ],
         ),
+      ),
+    );
+  }
+
+  // Side drawer untuk fitur premium (AI Coach, Challenge, Sleep Stories, Subscription)
+  Widget _buildSideDrawer() {
+    return Drawer(
+      backgroundColor: SomaTheme.bgCard,
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(color: SomaTheme.bgDeep),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.psychology, color: SomaTheme.teal, size: 32),
+                  const SizedBox(height: 12),
+                  Text('SOMA Premium', style: TextStyle(color: SomaTheme.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                  Text('Fitur tambahan untuk otak Anda', style: TextStyle(color: SomaTheme.textMuted, fontSize: 13)),
+                ],
+              ),
+            ),
+            _buildSideItem(Icons.auto_awesome, 'AI Brain Coach', 'Insight & saran personal harian', const AICoachScreen()),
+            _buildSideItem(Icons.local_fire_department, 'Daily Challenge', 'Tantangan otak harian + streak', const ChallengeScreen()),
+            _buildSideItem(Icons.nightlight, 'Sleep Stories', 'Cerita audio pengantar tidur', const SleepStoriesScreen()),
+            _buildSideItem(Icons.workspace_premium, 'Upgrade Premium', 'Buka semua fitur SOMA', const SubscriptionScreen()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSideItem(IconData icon, String title, String subtitle, Widget screen) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: SomaTheme.teal),
+        title: Text(title, style: TextStyle(color: SomaTheme.text, fontWeight: FontWeight.w600, fontSize: 15)),
+        subtitle: Text(subtitle, style: TextStyle(color: SomaTheme.textMuted, fontSize: 12)),
+        onTap: () {
+          Navigator.pop(context);
+          Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+        },
       ),
     );
   }
