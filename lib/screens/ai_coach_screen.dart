@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/soma_theme.dart';
 import '../services/auth_service.dart';
+import 'breathing_screen.dart';
+import 'memory_screen.dart';
+import 'focus_screen.dart';
 
 class AICoachScreen extends StatefulWidget {
   const AICoachScreen({super.key});
@@ -495,13 +498,13 @@ class _AICoachScreenState extends State<AICoachScreen> {
     Widget target;
     switch (screen) {
       case 'breathing':
-        target = const BreathingPlaceholder();
+        target = const BreathingExerciseScreen();
         break;
       case 'memory':
-        target = const MemoryPlaceholder();
+        target = const MemoryScreen();
         break;
       case 'focus':
-        target = const FocusPlaceholder();
+        target = const FocusScreen();
         break;
       default:
         return;

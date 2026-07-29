@@ -105,11 +105,40 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: SomaTheme.bgDeep,
+      appBar: AppBar(
+        backgroundColor: SomaTheme.bgDeep,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(_currentTitle, style: const TextStyle(color: SomaTheme.white, fontWeight: FontWeight.w700, fontSize: 18)),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: Icon(Icons.menu, color: SomaTheme.tealBright),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+        actions: _currentIndex == 3 ? [
+          Builder(
+            builder: (context) => IconButton(
+              icon: Icon(Icons.sports_esports, color: SomaTheme.tealBright),
+              onPressed: () => Scaffold.of(context).openEndDrawer(),
+            ),
+          ),
+        ] : null,
+      ),
       body: _getBody(),
       bottomNavigationBar: _buildNavBar(),
       endDrawer: _currentIndex == 3 ? _buildGameDrawer() : null,
       drawer: _buildSideDrawer(),
     );
+  }
+
+  String get _currentTitle {
+    if (_currentIndex == 3) {
+      const gameTitles = ['Fokus', 'Memory', 'Catur'];
+      return gameTitles[_gameIndex];
+    }
+    const titles = ['SOMA', 'Tidur', 'Tenang', 'Game', 'Belajar', 'Setting'];
+    return titles[_currentIndex];
   }
 
   Widget _getBody() {

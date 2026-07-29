@@ -236,6 +236,7 @@ class _SleepStoriesScreenState extends State<SleepStoriesScreen> {
 
     setState(() => _isPlaying = true);
     try {
+      if (_player == null) return;
       await _player!.play();
       _startProgressTimer();
     } catch (_) {
