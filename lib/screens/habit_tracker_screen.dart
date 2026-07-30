@@ -934,7 +934,7 @@ class _Habit {
 
   factory _Habit.fromJson(Map<String, dynamic> j) => _Habit(
         name: j['name'] as String? ?? '',
-        icon: IconData(j['icon'] as int? ?? Icons.check.codePoint,
+        icon: IconData(j['icon'] as int? ?? 0xe6ca,
             fontFamily: 'MaterialIcons'),
         color: Color(j['color'] as int? ?? SomaTheme.teal.value),
         target: j['target'] as String? ?? 'harian',
