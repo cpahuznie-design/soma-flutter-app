@@ -27,7 +27,7 @@ jobs:
       run: flutter pub get
     
     - name: Build Web
-      run: flutter build web --release --base-href="/soma-flutter-app/"
+      run: flutter build web --release --base-href="/soma-flutter-app/" --no-tree-shake-icons
     
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3
