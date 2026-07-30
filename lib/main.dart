@@ -13,6 +13,10 @@ import 'screens/ai_coach_screen.dart';
 import 'screens/challenge_screen.dart';
 import 'screens/sleep_stories_screen.dart';
 import 'screens/subscription_screen.dart';
+import 'screens/soundscape_screen.dart';
+import 'screens/spaced_repetition_screen.dart';
+import 'screens/nback_screen.dart';
+import 'screens/habit_tracker_screen.dart';
 import 'services/auth_service.dart';
 
 void main() {
@@ -237,6 +241,10 @@ class _MainScreenState extends State<MainScreen> {
             _buildSideItem(Icons.auto_awesome, 'AI Brain Coach', 'Insight & saran personal harian', const AICoachScreen()),
             _buildSideItem(Icons.local_fire_department, 'Daily Challenge', 'Tantangan otak harian + streak', const ChallengeScreen()),
             _buildSideItem(Icons.nightlight, 'Sleep Stories', 'Cerita audio pengantar tidur', const SleepStoriesScreen()),
+            _buildSideItem(Icons.graphic_eq, 'Soundscape', 'Mix suara ambient relaksasi', const SoundscapeScreen()),
+            _buildSideItem(Icons.style, 'Flashcard Pro', 'Spaced repetition untuk hafal', const SpacedRepetitionScreen()),
+            _buildSideItem(Icons.psychology, 'N-Back Training', 'Latih working memory + IQ', const NBackScreen()),
+            _buildSideItem(Icons.check_circle_outline, 'Habit Tracker', 'Kebiasaan otak sehat + streak', const HabitTrackerScreen()),
             _buildSideItem(Icons.workspace_premium, 'Upgrade Premium', 'Buka semua fitur SOMA', const SubscriptionScreen()),
           ],
         ),
